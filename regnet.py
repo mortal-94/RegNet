@@ -179,9 +179,9 @@ class RegNet(pl.LightningModule):
         self.flatten = nn.Flatten()
         self.output = nn.LazyLinear(classes)
 
-        self.val_accuracy = tm.Accuracy(task="multiclass", num_classes=10)
-        self.test_accuracy = tm.Accuracy(task="multiclass", num_classes=10)
-        self.train_accuracy = tm.Accuracy(task="multiclass", num_classes=10)
+        self.val_accuracy = tm.Accuracy(task="multiclass", num_classes=self.classes)
+        self.test_accuracy = tm.Accuracy(task="multiclass", num_classes=self.classes)
+        self.train_accuracy = tm.Accuracy(task="multiclass", num_classes=self.classes)
 
         self.config = config
         self.validation_step_outputs = []
