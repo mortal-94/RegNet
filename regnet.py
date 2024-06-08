@@ -421,7 +421,7 @@ if __name__  == "__main__":
         
     # root_path = '/storage/PCB-Components-L1'
     # cfm = ComponentsDataModule(root_path, batch_size=batch_size)
-    cfm = Cifar10DataModule()
+    cfm = Cifar10DataModule(batch_size=batch_size)
     
     model = RegNet(rnn_regulated_block,
                    in_dim=3,
