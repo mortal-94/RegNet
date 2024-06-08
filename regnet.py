@@ -220,7 +220,7 @@ class RegNet(pl.LightningModule):
 
 
     def configure_optimizers(self):
-        learning_rate = 0.01015355313229821
+        learning_rate = 0.001015355313229821
         weight_decay = 1.4356281283408686e-05
 
         if self.config is not None:
@@ -418,7 +418,7 @@ if __name__  == "__main__":
 
     if args.tune:
         TunePBT(
-            train_regnet, 'regnet', num_samples=10, num_epochs=2,
+            train_regnet, 'regnet', num_samples=cfm.num_classes, num_epochs=2,
             cpus_per_trial=4, gpus_per_trial=1
         )
         
