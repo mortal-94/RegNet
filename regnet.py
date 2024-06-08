@@ -430,7 +430,7 @@ if __name__  == "__main__":
                    in_dim=3,
                    h_dim=64,
                    intermediate_channels=32,
-                   classes=10,
+                   classes=cfm.num_classes,
                    cell_type='lstm',
                    layers=[1, 1, 3]
                   )
