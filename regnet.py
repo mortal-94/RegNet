@@ -220,16 +220,17 @@ class RegNet(pl.LightningModule):
 
 
     def configure_optimizers(self):
-        learning_rate = 0.001015355313229821
-        weight_decay = 1.4356281283408686e-05
-
+        # learning_rate = 0.001015355313229821
+        # weight_decay = 1.4356281283408686e-05
+        learning_rate = 0.1
+        
         if self.config is not None:
             learning_rate = self.config['lr']
             weight_decay = self.config['weight_decay']
 
-        optimizer= SGD(self.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=momentum)
-        lr_scheduler = CosineAnnealingLR(optimizer, T_max=200)
-        return { "optimizer": optimizer, "lr_scheduler": lr_scheduler, "monitor":  "val_accuracy"}
+        optimizer= SGD(self.parameters(), lr=learning_rate, momentum=momentum)
+        # lr_scheduler = CosineAnnealingLR(optimizer, T_max=200)
+        return { "optimizer": optimizer, "monitor":  "val_accuracy"}
 
 
     def training_step(self, batch, batch_idx):
