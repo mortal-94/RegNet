@@ -26,7 +26,7 @@ from ray.tune.integration.pytorch_lightning import TuneReportCallback, TuneRepor
 
 momentum = 0.9
 max_epochs = 30
-batch_size = 32
+batch_size = 128
 
 class SELayer(nn.Module):
     def __init__(self, in_dim:int, reduction_factor:int=8) -> None:
@@ -179,11 +179,12 @@ class RegNet(pl.LightningModule):
         self.flatten = nn.Flatten()
         self.output = nn.LazyLinear(classes)
 
-        self.val_accuracy = tm.Accuracy()
-        self.test_accuracy = tm.Accuracy()
-        self.train_accuracy = tm.Accuracy()
+        self.val_accuracy = tm.Accuracy(task="multiclass", num_classes=10)
+        self.test_accuracy = tm.Accuracy(task="multiclass", num_classes=10)
+        self.train_accuracy = tm.Accuracy(task="multiclass", num_classes=10)
 
         self.config = config
+        self.validation_step_outputs = []
         
         self.save_hyperparameters()
 
@@ -240,7 +241,7 @@ class RegNet(pl.LightningModule):
         return { "loss" : loss, "accuracy" : accuracy }
 
 
-    def training_epoch_end(self, outputs):
+    def on_train_epoch_end(self):
         self.log('train_accuracy', self.train_accuracy, prog_bar=True)
 
 
@@ -250,11 +251,12 @@ class RegNet(pl.LightningModule):
         loss = F.cross_entropy(outputs, labels)
         outputs = torch.argmax(outputs, dim=-1)
         accuracy = self.val_accuracy(outputs, labels)
+        self.validation_step_outputs.append(loss)
         return { "val_loss" : loss }
 
 
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x["val_loss"] for x in outputs]).mean()
+    def on_validation_epoch_end(self):
+        avg_loss = torch.stack(self.validation_step_outputs).mean()
         self.log('val_loss', avg_loss)
         self.log('val_accuracy', self.val_accuracy, prog_bar=True)
 
@@ -410,20 +412,22 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--tune', help='Find hyperparameter values', action='store_true')
     args = parser.parse_args()
+
     if args.tune:
         TunePBT(
             train_regnet, 'regnet', num_samples=10, num_epochs=2,
             cpus_per_trial=4, gpus_per_trial=1
         )
         
-    root_path = '/storage/PCB-Components-L1'
-    cfm = ComponentsDataModule(root_path, batch_size=batch_size)
+    # root_path = '/storage/PCB-Components-L1'
+    # cfm = ComponentsDataModule(root_path, batch_size=batch_size)
+    cfm = Cifar10DataModule()
     
     model = RegNet(rnn_regulated_block,
                    in_dim=3,
                    h_dim=64,
                    intermediate_channels=32,
-                   classes=6,
+                   classes=10,
                    cell_type='lstm',
                    layers=[1, 1, 3]
                   )
@@ -442,7 +446,7 @@ if __name__  == "__main__":
 
 
     trainer = Trainer(
-        gpus=1, fast_dev_run=False, logger=logger,
+        accelerator="auto", fast_dev_run=False, logger=logger,
         max_epochs=max_epochs, callbacks=[checkpoint],
     )
 
