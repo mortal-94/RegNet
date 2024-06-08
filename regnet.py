@@ -411,6 +411,9 @@ if __name__  == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--tune', help='Find hyperparameter values', action='store_true')
+    parser.add_argument('--epochs', help='Number of epochs to train', type=int, default=30)
+    parser.add_argument('--batch_size', help='Batch size', type=int, default=128)
+
     args = parser.parse_args()
 
     if args.tune:
@@ -421,7 +424,7 @@ if __name__  == "__main__":
         
     # root_path = '/storage/PCB-Components-L1'
     # cfm = ComponentsDataModule(root_path, batch_size=batch_size)
-    cfm = Cifar10DataModule(batch_size=batch_size)
+    cfm = Cifar10DataModule(batch_size=args.batch_size)
     
     model = RegNet(rnn_regulated_block,
                    in_dim=3,
@@ -447,7 +450,7 @@ if __name__  == "__main__":
 
     trainer = Trainer(
         accelerator="auto", fast_dev_run=False, logger=logger,
-        max_epochs=max_epochs, callbacks=[checkpoint],
+        max_epochs=args.epochs, callbacks=[checkpoint],
     )
 
     trainer.fit(model, cfm)
