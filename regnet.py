@@ -228,8 +228,8 @@ class RegNet(pl.LightningModule):
             weight_decay = self.config['weight_decay']
 
         optimizer= SGD(self.parameters(), lr=0.1, weight_decay=1e-4, momentum=0.9)
-        # lr_scheduler = CosineAnnealingLR(optimizer, T_max=200)
-        lr_scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
+        lr_scheduler = CosineAnnealingLR(optimizer, T_max=100)
+        # lr_scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
         return { "optimizer": optimizer, "lr_scheduler": lr_scheduler,"monitor":  "val_accuracy"}
 
 
