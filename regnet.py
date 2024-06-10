@@ -216,9 +216,9 @@ class RegNet(pl.LightningModule):
         # learning_rate = 0.1
 
         def lr_lambda(epoch):
-            if epoch < 40:
+            if epoch < 30:
                 return 0.1
-            elif epoch < 80:
+            elif epoch < 60:
                 return 0.01
             else:
                 return 0.001
