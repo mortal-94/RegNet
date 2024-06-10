@@ -70,7 +70,7 @@ class rnn_regulated_block(nn.Module):
         self.conv4 = nn.Conv2d(intermediate_channels, intermediate_channels * 4, kernel_size=1, stride=1, bias=False)
         self.bn4 = nn.BatchNorm2d(intermediate_channels * 4)
 
-        # self.se_layer = SELayer(intermediate_channels * 4, reduction_factor=8)
+        self.se_layer = SELayer(intermediate_channels * 4, reduction_factor=8)
         
         downsample_dim = h_dim if isinstance(rnn_cell, ConvGRUCell) else h_dim * 2
         #Cell state dim remains constant but aspect ratio of the feature map is variable
@@ -99,7 +99,7 @@ class rnn_regulated_block(nn.Module):
         x = self.conv4(x)
         x = self.bn4(x)
 
-        # x = self.se_layer(x)
+        x = self.se_layer(x)
 
         if self.identity_block is not None:
             y = self.identity_block(y)
@@ -446,7 +446,7 @@ if __name__  == "__main__":
                        intermediate_channels=32,
                        classes=cfm.num_classes,
                        cell_type='lstm',
-                       layers=[2, 2, 3]
+                       layers=[3, 3, 3]
                       )
 
 
