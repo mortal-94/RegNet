@@ -414,6 +414,8 @@ if __name__  == "__main__":
     parser.add_argument('--tune', help='Find hyperparameter values', action='store_true')
     parser.add_argument('--epochs', help='Number of epochs to train', type=int, default=30)
     parser.add_argument('--batch_size', help='Batch size', type=int, default=128)
+    parser.add_argument('--checkpoint', help='checkpoint path', type=string, default=None)
+    
 
     args = parser.parse_args()
 
@@ -423,18 +425,20 @@ if __name__  == "__main__":
             cpus_per_trial=4, gpus_per_trial=1
         )
         
-    # root_path = '/storage/PCB-Components-L1'
-    # cfm = ComponentsDataModule(root_path, batch_size=batch_size)
     cfm = Cifar10DataModule(batch_size=args.batch_size)
-    
-    model = RegNet(rnn_regulated_block,
-                   in_dim=3,
-                   h_dim=64,
-                   intermediate_channels=32,
-                   classes=cfm.num_classes,
-                   cell_type='lstm',
-                   layers=[1, 1, 3]
-                  )
+
+    model = None
+    if args.checkpoint:
+        model = RegNet.load_from_checkpoint(args.checkpoint)
+    else:
+        model = RegNet(rnn_regulated_block,
+                       in_dim=3,
+                       h_dim=64,
+                       intermediate_channels=32,
+                       classes=cfm.num_classes,
+                       cell_type='lstm',
+                       layers=[1, 1, 3]
+                      )
 
 
     ### Log metric progression
