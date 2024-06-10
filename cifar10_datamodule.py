@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 
 from typing import Optional
 from torchvision import transforms
-from torchvision.datasets import CIFAR100
+from torchvision.datasets import CIFAR10
 from torch.utils.data import random_split, DataLoader
 
 class Cifar10DataModule(pl.LightningDataModule):
@@ -11,7 +11,7 @@ class Cifar10DataModule(pl.LightningDataModule):
         super().__init__()
 
         #dataset specific items
-        self.num_classes = 100
+        self.num_classes = 10
         self.image_dims = (3, 112, 112)
 
         self.data_dir = data_dir
@@ -28,12 +28,12 @@ class Cifar10DataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         #Do tasks such as download data
-        CIFAR100(self.data_dir, train=True, download=self.download)
-        CIFAR100(self.data_dir, train=False, download=self.download)
+        CIFAR10(self.data_dir, train=True, download=self.download)
+        CIFAR10(self.data_dir, train=False, download=self.download)
 
     def setup(self, stage: Optional[str] = None):
-        self.cifar_train = CIFAR100(self.data_dir, train=True, transform=self.transform)
-        self.cifar_val = CIFAR100(self.data_dir, train=False, transform=self.transform)
+        self.cifar_train = CIFAR10(self.data_dir, train=True, transform=self.transform)
+        self.cifar_val = CIFAR10(self.data_dir, train=False, transform=self.transform)
 
 
     def train_dataloader(self):
