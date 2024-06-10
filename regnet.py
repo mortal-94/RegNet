@@ -236,7 +236,7 @@ class RegNet(pl.LightningModule):
             learning_rate = self.config['lr']
             weight_decay = self.config['weight_decay']
 
-        optimizer= SGD(self.parameters(), lr=0.1, momentum=momentum)
+        optimizer= SGD(self.parameters(), lr=0.1, weight_decay=1e-4, momentum=momentum)
         # lr_scheduler = CosineAnnealingLR(optimizer, T_max=200)
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
         return { "optimizer": optimizer, "lr_scheduler": lr_scheduler,"monitor":  "val_accuracy"}
@@ -442,7 +442,7 @@ if __name__  == "__main__":
     else:
         model = RegNet(rnn_regulated_block,
                        in_dim=3,
-                       h_dim=16,
+                       h_dim=8,
                        intermediate_channels=16,
                        classes=cfm.num_classes,
                        cell_type='lstm',
