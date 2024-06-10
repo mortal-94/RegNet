@@ -225,18 +225,18 @@ class RegNet(pl.LightningModule):
         # learning_rate = 0.1
 
         def lr_lambda(epoch):
-            if epoch < 81:
-                return 1.0
-            elif epoch < 122:
+            if epoch < 40:
                 return 0.1
-            else:
+            elif epoch < 60:
                 return 0.01
+            else:
+                return 0.001
         
         if self.config is not None:
             learning_rate = self.config['lr']
             weight_decay = self.config['weight_decay']
 
-        optimizer= SGD(self.parameters(), lr=learning_rate, momentum=momentum)
+        optimizer= SGD(self.parameters(), lr=0.1, momentum=momentum)
         # lr_scheduler = CosineAnnealingLR(optimizer, T_max=200)
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
         return { "optimizer": optimizer, "lr_scheduler": lr_scheduler,"monitor":  "val_accuracy"}
