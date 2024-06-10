@@ -297,11 +297,11 @@ if __name__  == "__main__":
     else:
         model = RegNet(rnn_regulated_block,
                        in_dim=3,
-                       h_dim=32,
-                       intermediate_channels=32,
+                       h_dim=16,
+                       intermediate_channels=64,
                        classes=cfm.num_classes,
-                       cell_type='lstm'
-                       # layers=[1, 1, 3]
+                       cell_type='lstm',
+                       layers=[1, 1, 3]
                       )
 
 
