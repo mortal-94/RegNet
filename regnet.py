@@ -437,7 +437,7 @@ if __name__  == "__main__":
                        intermediate_channels=32,
                        classes=cfm.num_classes,
                        cell_type='lstm',
-                       layers=[1, 1, 3]
+                       layers=[2, 2, 3]
                       )
 
 
