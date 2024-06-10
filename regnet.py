@@ -216,9 +216,9 @@ class RegNet(pl.LightningModule):
         # learning_rate = 0.1
 
         def lr_lambda(epoch):
-            if epoch < 80:
+            if epoch < 40:
                 return 0.1
-            elif epoch < 120:
+            elif epoch < 80:
                 return 0.01
             else:
                 return 0.001
@@ -298,7 +298,7 @@ if __name__  == "__main__":
         model = RegNet(rnn_regulated_block,
                        in_dim=3,
                        h_dim=16,
-                       intermediate_channels=16,
+                       intermediate_channels=32,
                        classes=cfm.num_classes,
                        cell_type='lstm',
                        layers=[5, 5, 5]
