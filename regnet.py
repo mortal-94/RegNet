@@ -300,8 +300,8 @@ if __name__  == "__main__":
                        h_dim=16,
                        intermediate_channels=32,
                        classes=cfm.num_classes,
-                       cell_type='lstm',
-                       layers=[5, 5, 5]
+                       cell_type='lstm'
+                       # layers=[5, 5, 5]
                       )
 
 
