@@ -414,7 +414,7 @@ if __name__  == "__main__":
     parser.add_argument('--tune', help='Find hyperparameter values', action='store_true')
     parser.add_argument('--epochs', help='Number of epochs to train', type=int, default=30)
     parser.add_argument('--batch_size', help='Batch size', type=int, default=128)
-    parser.add_argument('--checkpoint', help='checkpoint path', type=string, default=None)
+    parser.add_argument('--checkpoint', help='checkpoint path', type=str, default=None)
     
 
     args = parser.parse_args()
