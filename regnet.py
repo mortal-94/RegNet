@@ -17,16 +17,7 @@ from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from cifar10_datamodule import Cifar10DataModule
-from components_datamodule import ComponentsDataModule
-
-from ray import tune
-from ray.tune import CLIReporter
-from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
-from ray.tune.integration.pytorch_lightning import TuneReportCallback, TuneReportCheckpointCallback
-
-momentum = 0.9
-max_epochs = 30
-batch_size = 128
+# from components_datamodule import ComponentsDataModule
 
 class SELayer(nn.Module):
     def __init__(self, in_dim:int, reduction_factor:int=8) -> None:
@@ -236,7 +227,7 @@ class RegNet(pl.LightningModule):
             learning_rate = self.config['lr']
             weight_decay = self.config['weight_decay']
 
-        optimizer= SGD(self.parameters(), lr=0.1, weight_decay=1e-4, momentum=momentum)
+        optimizer= SGD(self.parameters(), lr=0.1, weight_decay=1e-4, momentum=0.9)
         # lr_scheduler = CosineAnnealingLR(optimizer, T_max=200)
         lr_scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
         return { "optimizer": optimizer, "lr_scheduler": lr_scheduler,"monitor":  "val_accuracy"}
@@ -288,139 +279,9 @@ class RegNet(pl.LightningModule):
         return self(batch)
 
 
-def train_regnet(config, num_epochs=10, num_gpus=1):
-
-    block1 = config['block1']
-    block2 = config['block2']
-    block3 = config['block3']
-    block4 = config['block4']
-    layers = [block1, block2, block3, block4]
-
-    batch_size = config['batch_size']
-    intermediate_channels = config['intermediate_channels']
-    cell_type = config['cell_type']
-    h_dim = config['h_dim']
-
-    cfm = Cifar10DataModule('/notebooks/RegNet/dataset',batch_size=batch_size, download=False)
-    model = RegNet(
-        rnn_regulated_block, cfm.image_dims[0], h_dim, intermediate_channels,
-        classes=cfm.num_classes, cell_type=cell_type, layers=layers, config=config
-    )
-
-    ### Log metric progression
-    logger = TensorBoardLogger('tuner_logs', name='regnet_logs')
-
-
-    #Tune callback
-    tune_report = TuneReportCallback({ "val_loss": "val_loss", "val_accuracy": "val_accuracy"}, on="validation_end")
-    tune_report_ckpt = TuneReportCheckpointCallback(
-        metrics={ "val_loss": "val_loss", "val_accuracy": "val_accuracy"},
-        filename="tune_last_ckpt", on="validation_end"
-    )
-
-    trainer = pl.Trainer(
-        max_epochs=num_epochs, gpus= num_gpus, logger=logger,
-        callbacks=[ tune_report, tune_report_ckpt ]
-    )
-    trainer.fit(model, cfm)
-
-
-#======================================= Tuning Functions ============================================
-
-def TuneAsha(train_fn, model:str, num_samples:int=10, num_epochs:int=10, cpus_per_trial:int=1, gpus_per_trial:int=1, data_dir='./tuner'):
-    config = {
-        "block1": tune.randint(2, 5),
-        "block2": tune.randint(2, 5),
-        "block3": tune.randint(2, 5),
-        "cell_type": tune.choice(['gru', 'lstm']),
-        "intermediate_channels": tune.choice([16, 32, 64]),
-        "lr": tune.loguniform(1e-4, 1e-1),
-        "batch_size": tune.choice([32, 64, 128]),
-        "weight_decay": tune.loguniform(1e-4, 1e-5),
-    }
-
-    scheduler = ASHAScheduler(max_t=num_epochs, grace_period=1, reduction_factor=2)
-
-    reporter = CLIReporter(
-        parameter_columns=[ "block1", "block2", "block3", "block4", "lr", "batch_size", "weight_decay"],
-        metric_columns=["val_loss", "val_accuracy", "training_iteration"]
-    )
-
-    analysis = tune.run(
-        tune.with_parameters(
-            train_fn, num_epochs=num_epochs,
-            num_gpus=gpus_per_trial
-        ),
-        resume=True,
-        resources_per_trial={
-            "cpu": cpus_per_trial,
-            "gpu": gpus_per_trial
-        },
-        metric="val_accuracy", mode="max", config=config,
-        num_samples=num_samples, scheduler=scheduler, progress_reporter=reporter, name=f"{model}_asha"
-    )
-    print("Best hyperparameters found were: ", analysis.best_config)
-    exit(0)
-
-def TunePBT(train_fn, model:str, num_samples:int=10, num_epochs:int=10, cpus_per_trial:int=1, gpus_per_trial:int=1, data_dir='./tuner'):
-    config = {
-        "block1": tune.randint(3, 8),
-        "block2": tune.randint(3, 8),
-        "block3": tune.randint(3, 8),
-        "block4": tune.randint(3, 8),
-        "h_dim": tune.choice([8, 16, 32, 64, 128]),
-        "cell_type": tune.choice(['gru', 'lstm']),
-        "intermediate_channels": tune.choice([16, 32, 64]),
-        "lr": tune.loguniform(1e-4, 1e-1),
-        "batch_size": tune.choice([32, 64]),
-        "weight_decay": tune.loguniform(1e-4, 1e-5),
-    }
-
-    scheduler = PopulationBasedTraining(
-        perturbation_interval=4,
-        hyperparam_mutations={
-            "block1": tune.randint(3, 8),
-            "block2": tune.randint(3, 8),
-            "block3": tune.randint(3, 8),
-            "block4": tune.randint(3, 8),
-            "cell_type": ['gru', 'lstm'],
-            "lr": tune.loguniform(1e-4, 1e-1),
-            "weight_decay": tune.loguniform(1e-4, 1e-5),
-            "batch_size": [32, 64],
-        }
-    )
-
-    reporter = CLIReporter(
-        parameter_columns=[
-            "h_dim","block1", "block2", "block3", "block4", "cell_type", "lr",
-            "batch_size", "intermediate_channels" ,"weight_decay"
-        ],
-        metric_columns=["val_loss", "val_accuracy", "training_iteration"])
-
-    analysis = tune.run(
-        tune.with_parameters(
-            train_fn, num_epochs=num_epochs,
-            num_gpus=gpus_per_trial
-        ),
-        resources_per_trial={
-            "cpu": cpus_per_trial,
-            "gpu": gpus_per_trial
-        },
-        metric="val_accuracy", mode="max", config=config,
-        num_samples=num_samples, scheduler=scheduler, progress_reporter=reporter, name=f"{model}_pbt"
-    )
-    print("Best hyperparameters found were: ", analysis.best_config)
-    exit(0)
-
-#====================================== End Tuning Functions =====================================
-
-#'block1': 1, 'block2': 1, 'block3': 3, 'h_dim': 64, 'cell_type': 'lstm', 'intermediate_channels': 32, 'lr': 0.01015355313229821, 'batch_size': 32, #'weight_decay': 1.4356281283408686e-05 -> Starting Val Accuracy 0.62 
-
-
 if __name__  == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--tune', help='Find hyperparameter values', action='store_true')
     parser.add_argument('--epochs', help='Number of epochs to train', type=int, default=30)
     parser.add_argument('--batch_size', help='Batch size', type=int, default=128)
     parser.add_argument('--checkpoint', help='checkpoint path', type=str, default=None)
@@ -428,12 +289,6 @@ if __name__  == "__main__":
 
     args = parser.parse_args()
 
-    if args.tune:
-        TunePBT(
-            train_regnet, 'regnet', num_samples=cfm.num_classes, num_epochs=2,
-            cpus_per_trial=4, gpus_per_trial=1
-        )
-        
     cfm = Cifar10DataModule(batch_size=args.batch_size)
 
     model = None
@@ -442,7 +297,7 @@ if __name__  == "__main__":
     else:
         model = RegNet(rnn_regulated_block,
                        in_dim=3,
-                       h_dim=8,
+                       h_dim=16,
                        intermediate_channels=16,
                        classes=cfm.num_classes,
                        cell_type='lstm',
