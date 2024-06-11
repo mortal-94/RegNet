@@ -11,13 +11,12 @@ from typing import Tuple, Dict, List
 from conv_rnns import ConvGRUCell, ConvLSTMCell
 
 
-from torch.optim import Adam, SGD
-from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
+from torch.optim import SGD
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from cifar10_datamodule import Cifar10DataModule
-# from components_datamodule import ComponentsDataModule
+from cifar100_datamodule import Cifar100DataModule
 
 class SELayer(nn.Module):
     def __init__(self, in_dim:int, reduction_factor:int=8) -> None:
@@ -126,7 +125,6 @@ class RegNet(pl.LightningModule):
         self.regulated_blocks = nn.ModuleList()
         num_layers = len(layers)
         
-        #64, 256, 512, 1025
         
         c_in = self.intermediate_channels
         
@@ -211,17 +209,6 @@ class RegNet(pl.LightningModule):
 
 
     def configure_optimizers(self):
-        # learning_rate = 0.001015355313229821
-        # weight_decay = 1.4356281283408686e-05
-        # learning_rate = 0.1
-
-        def lr_lambda(epoch):
-            if epoch < 30:
-                return 0.1
-            elif epoch < 60:
-                return 0.01
-            else:
-                return 0.001
         
         if self.config is not None:
             learning_rate = self.config['lr']
@@ -229,7 +216,6 @@ class RegNet(pl.LightningModule):
 
         optimizer= SGD(self.parameters(), lr=0.1, weight_decay=1e-4, momentum=0.9)
         lr_scheduler = CosineAnnealingLR(optimizer, T_max=30)
-        # lr_scheduler = LambdaLR(optimizer, lr_lambda=lr_lambda)
         return { "optimizer": optimizer, "lr_scheduler": lr_scheduler,"monitor":  "val_accuracy"}
 
 
@@ -289,7 +275,7 @@ if __name__  == "__main__":
 
     args = parser.parse_args()
 
-    cfm = Cifar10DataModule(batch_size=args.batch_size)
+    cfm = Cifar100DataModule(batch_size=args.batch_size)
 
     model = None
     if args.checkpoint:
